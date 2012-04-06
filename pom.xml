@@ -24,6 +24,12 @@
     </dependency>
 
     <dependency>
+      <groupId>com.cloudera.crunch</groupId>
+      <artifactId>crunch</artifactId>
+      <version>0.2.0</version>
+    </dependency>
+
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>4.8.2</version>
