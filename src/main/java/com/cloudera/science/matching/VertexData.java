@@ -14,7 +14,6 @@
  */
 package com.cloudera.science.matching;
 
-import java.util.List;
 import java.util.Map;
 
 import org.apache.hadoop.io.IntWritable;
@@ -22,9 +21,6 @@ import org.apache.hadoop.io.Text;
 
 import com.google.common.collect.Maps;
 
-/**
- *
- */
 public class VertexData {
   private String vertexId;
   private boolean bidder;
@@ -40,6 +36,8 @@ public class VertexData {
     this.vertexId = vertexId;
     this.bidder = bidder;
     this.edges = edges;
+    this.matchId = "";
+    this.price = 0.0;
   }
 
   public VertexData(Text vertexId, VertexState vertexState, Map<Text, IntWritable> edges) {
@@ -53,15 +51,30 @@ public class VertexData {
     this.price = vertexState.getPrice();
   }
 
-  public Text getVertexId() {
+  public String getVertexId() { return vertexId; }
+  public void setVertexId(String vertexId) { this.vertexId = vertexId; }
+  
+  public boolean isBidder() { return bidder; }
+  public void setBidder(boolean bidder) { this.bidder = bidder; }
+  
+  public Map<String, Integer> getEdges() { return edges; }
+  public void setEdges(Map<String, Integer> edges) { this.edges = edges; }
+  
+  public String getMatchId() { return matchId; }
+  public void setMatchId(String matchId) { this.matchId = matchId; }
+  
+  public double getPrice() { return price; }
+  public void setPrice(double price) { this.price = price; }
+  
+  public Text extractVertexId() {
     return new Text(vertexId);
   }
   
-  public VertexState getVertexState() {
+  public VertexState extractVertexState() {
     return new VertexState(bidder, new Text(matchId), price);
   }
   
-  public Map<Text, IntWritable> getEdges() {
+  public Map<Text, IntWritable> extractEdges() {
     Map<Text, IntWritable> out = Maps.newHashMap();
     for (Map.Entry<String, Integer> e : edges.entrySet()) {
       out.put(new Text(e.getKey()), new IntWritable(e.getValue()));

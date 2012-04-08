@@ -49,8 +49,7 @@ public class BipartiteMatchingVertexReader extends TextVertexReader<Text, Vertex
       throws IOException, InterruptedException {
     VertexData vertexData = mapper.readValue(getRecordReader().getCurrentValue().toString(), VertexData.class);
     BipartiteMatchingVertex v = new BipartiteMatchingVertex();
-    v.initialize(vertexData.getVertexId(), vertexData.getVertexState(), vertexData.getEdges(), null);
+    v.initialize(vertexData.extractVertexId(), vertexData.extractVertexState(), vertexData.extractEdges(), null);
     return v;
   }
-
 }
