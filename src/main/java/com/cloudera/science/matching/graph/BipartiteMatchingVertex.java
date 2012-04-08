@@ -58,7 +58,7 @@ public class BipartiteMatchingVertex extends EdgeListVertex<Text, VertexState, I
             break;
           }
         }
-        if (currentValue != null && currentValue.getValue() == max.getValue()) {
+        if (currentValue != null && currentValue.getValue().equals(max.getValue())) {
           return currentValue;
         }
         return max;
@@ -89,7 +89,6 @@ public class BipartiteMatchingVertex extends EdgeListVertex<Text, VertexState, I
         if (currentMatchId == null || !currentMatchId.equals(target.getVertexId())) {
           BigDecimal bid = null;
           if (values.size() > 1) {
-            
             AuctionMessage runnerUp = values.get(1);
             BigDecimal inc = target.getValue().subtract(runnerUp.getValue().add(getEpsilon()));
             bid = vpd.getPrice(target.getVertexId()).add(inc);

@@ -80,9 +80,21 @@ public class AuctionMessage implements WritableComparable<AuctionMessage> {
 
   @Override
   public int compareTo(AuctionMessage other) {
-    if (other.value.equals(value)) {
+    int cmp = other.value.compareTo(value);
+    if (cmp == 0) {
       return vertexId.hashCode() - other.vertexId.hashCode();
     }
-    return other.value.subtract(value).intValue();
+    return cmp;
+  }
+  
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder(vertexId.toString());
+    sb.append(" ");
+    if (signal != 0) {
+      return sb.append("Signal = ").append(signal).toString();
+    } else {
+      return sb.append(value).toString();
+    }
   }
 }
