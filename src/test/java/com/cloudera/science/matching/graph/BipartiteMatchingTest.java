@@ -144,8 +144,8 @@ public class BipartiteMatchingTest {
   
   @Test
   public void testUnassignedObject() throws Exception {
-    VertexData d1 = new VertexData("1", true, ImmutableMap.of("3", 2, "4", 3, "5", 1)); 
-    VertexData d2 = new VertexData("2", true, ImmutableMap.of("3", 3, "4", 2, "5", 1));
+    VertexData d1 = new VertexData("1", true, ImmutableMap.of("3", 1, "4", 3, "5", 2)); 
+    VertexData d2 = new VertexData("2", true, ImmutableMap.of("3", 3, "4", 1, "5", 2));
     VertexData d3 = new VertexData("3", false, ImmutableMap.of("1", -1, "2", -1));
     VertexData d4 = new VertexData("4", false, ImmutableMap.of("1", -1, "2", -1));
     VertexData d5 = new VertexData("5", false, ImmutableMap.of("1", -1, "2", -1));
