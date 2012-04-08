@@ -12,18 +12,14 @@
  * the specific language governing permissions and limitations under the
  * License.
  */
-package com.cloudera.science.matching.graph;
+package com.cloudera.science.matching;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.util.List;
 
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
-import org.apache.hadoop.io.WritableUtils;
-
-import com.google.common.collect.Lists;
 
 /**
  * Maintains the internal state of a vertex in the bipartite graph, with 
@@ -31,8 +27,7 @@ import com.google.common.collect.Lists;
 public class VertexState implements Writable {
 
   private boolean bidder;
-  private Text ownerId = new Text();
-  private List<Text> ownedIds = Lists.newArrayListWithCapacity(0);
+  private Text matchId = new Text();
   private double price = 0.0;
   
   public VertexState() { }
@@ -41,20 +36,22 @@ public class VertexState implements Writable {
     this.bidder = bidder;
   }
   
+  public VertexState(boolean bidder, Text matchId, double price) {
+    this.bidder = bidder;
+    this.matchId = matchId;
+    this.price = price;
+  }
+  
   public boolean isBidder() {
     return bidder;
   }
   
-  public Text getOwnerId() {
-    return ownerId;
+  public Text getMatchId() {
+    return matchId;
   }
   
-  public void setOwnerId(Text ownerId) {
-    this.ownerId = ownerId;
-  }
-  
-  public List<Text> getOwnedIds() {
-    return ownedIds;
+  public void setMatchId(Text ownerId) {
+    this.matchId = ownerId;
   }
   
   public double getPrice() {
@@ -68,31 +65,18 @@ public class VertexState implements Writable {
   @Override
   public void readFields(DataInput in) throws IOException {
     bidder = in.readBoolean();
-    if (bidder) {
-      ownedIds.clear();
-      int sz = WritableUtils.readVInt(in);
-      for (int i = 0; i < sz; i++) {
-        Text ownedId = new Text();
-        ownedId.readFields(in);
-        ownedIds.add(ownedId);
-      }
-    } else {
-      ownerId.readFields(in);
+    if (!bidder) {
       price = in.readDouble();
     }
+    matchId.readFields(in);
   }
 
   @Override
   public void write(DataOutput out) throws IOException {
     out.writeBoolean(bidder);
-    if (bidder) {
-      WritableUtils.writeVInt(out, ownedIds.size());
-      for (Text ownedId : ownedIds) {
-        ownedId.write(out);
-      }
-    } else {
-      ownerId.write(out);
+    if (!bidder) {
       out.writeDouble(price);
     }
+    matchId.write(out);
   }
 }

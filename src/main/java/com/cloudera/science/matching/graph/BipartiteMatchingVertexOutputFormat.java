@@ -16,11 +16,10 @@ package com.cloudera.science.matching.graph;
 
 import java.io.IOException;
 
-import org.apache.giraph.graph.VertexReader;
-import org.apache.giraph.lib.TextVertexInputFormat;
+import org.apache.giraph.graph.VertexWriter;
+import org.apache.giraph.lib.TextVertexOutputFormat;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 
 import com.cloudera.science.matching.VertexState;
@@ -28,11 +27,11 @@ import com.cloudera.science.matching.VertexState;
 /**
  *
  */
-public class BipartiteMatchingVertexInputFormat extends
-    TextVertexInputFormat<Text, VertexState, IntWritable, AuctionMessage> {
+public class BipartiteMatchingVertexOutputFormat extends
+    TextVertexOutputFormat<Text, VertexState, IntWritable> {
   @Override
-  public VertexReader<Text, VertexState, IntWritable, AuctionMessage> createVertexReader(
-      InputSplit split, TaskAttemptContext context) throws IOException {
-    return new BipartiteMatchingVertexReader(textInputFormat.createRecordReader(split, context));
+  public VertexWriter<Text, VertexState, IntWritable> createVertexWriter(
+      TaskAttemptContext context) throws IOException, InterruptedException {
+    return new BipartiteMatchingVertexWriter(textOutputFormat.getRecordWriter(context));
   }
 }

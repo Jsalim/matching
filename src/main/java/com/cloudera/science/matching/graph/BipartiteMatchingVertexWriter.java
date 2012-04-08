@@ -17,11 +17,10 @@ package com.cloudera.science.matching.graph;
 import java.io.IOException;
 
 import org.apache.giraph.graph.BasicVertex;
-import org.apache.giraph.lib.TextVertexInputFormat.TextVertexReader;
+import org.apache.giraph.lib.TextVertexOutputFormat.TextVertexWriter;
 import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.RecordReader;
+import org.apache.hadoop.mapreduce.RecordWriter;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import com.cloudera.science.matching.VertexData;
@@ -30,27 +29,22 @@ import com.cloudera.science.matching.VertexState;
 /**
  *
  */
-public class BipartiteMatchingVertexReader extends TextVertexReader<Text, VertexState, IntWritable, AuctionMessage> {
+public class BipartiteMatchingVertexWriter extends TextVertexWriter<Text, VertexState, IntWritable> {
 
+  private static final Text BLANK = new Text("");
+  
   private ObjectMapper mapper;
   
-  public BipartiteMatchingVertexReader(RecordReader<LongWritable, Text> rr) {
-    super(rr);
+  public BipartiteMatchingVertexWriter(RecordWriter<Text, Text> lineRecordWriter) {
+    super(lineRecordWriter);
     this.mapper = new ObjectMapper();
   }
-
+  
   @Override
-  public boolean nextVertex() throws IOException, InterruptedException {
-    return getRecordReader().nextKeyValue();
-  }
-
-  @Override
-  public BasicVertex<Text, VertexState, IntWritable, AuctionMessage> getCurrentVertex()
+  public void writeVertex(BasicVertex<Text, VertexState, IntWritable, ?> vertex)
       throws IOException, InterruptedException {
-    VertexData vertexData = mapper.readValue(getRecordReader().getCurrentValue().toString(), VertexData.class);
-    BipartiteMatchingVertex v = new BipartiteMatchingVertex();
-    v.initialize(vertexData.getVertexId(), vertexData.getVertexState(), vertexData.getEdges(), null);
-    return v;
+    BipartiteMatchingVertex bmv = (BipartiteMatchingVertex) vertex;
+    VertexData vertexData = new VertexData(bmv.getVertexId(), bmv.getVertexValue(), bmv.getEdges());
+    getRecordWriter().write(BLANK, new Text(mapper.writeValueAsString(vertexData)));
   }
-
 }

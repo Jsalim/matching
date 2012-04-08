@@ -48,21 +48,24 @@ public class AuctionMessage implements WritableComparable<AuctionMessage> {
   
   @Override
   public void readFields(DataInput in) throws IOException {
+    value = in.readDouble();
     if (vertexId == null) {
       vertexId = new Text();
     }
     vertexId.readFields(in);
-    value = in.readDouble();
   }
 
   @Override
   public void write(DataOutput out) throws IOException {
-    vertexId.write(out);
     out.writeDouble(value);
+    vertexId.write(out);
   }
 
   @Override
   public int compareTo(AuctionMessage other) {
+    if (other.value == value) {
+      return vertexId.hashCode() - other.vertexId.hashCode();
+    }
     return (int) (other.value - value);
   }
 }

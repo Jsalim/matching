@@ -14,26 +14,29 @@
  */
 package com.cloudera.science.matching.crunch;
 
-import static com.cloudera.crunch.type.writable.Writables.*;
+import static com.cloudera.crunch.type.avro.Avros.*;
 
 import java.util.List;
+import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.io.Text;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
 import com.cloudera.crunch.DoFn;
 import com.cloudera.crunch.Emitter;
+import com.cloudera.crunch.MapFn;
 import com.cloudera.crunch.Pair;
 import com.cloudera.crunch.Pipeline;
-import com.cloudera.crunch.fn.MapValuesFn;
 import com.cloudera.crunch.impl.mr.MRPipeline;
 import com.cloudera.crunch.io.From;
 import com.cloudera.crunch.io.To;
-import com.cloudera.science.matching.VertexDataWritable;
+import com.cloudera.crunch.type.writable.WritableTypeFamily;
+import com.cloudera.crunch.util.PTypes;
+import com.cloudera.science.matching.VertexData;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 /**
  *
@@ -59,30 +62,30 @@ public class InputPreparer implements Tool {
     }
   }
   
-  public static class WriteVertexFn extends MapValuesFn<String, Iterable<Pair<String, Integer>>, VertexDataWritable> {
+  public static class WriteVertexFn extends MapFn<Pair<String, Iterable<Pair<String, Integer>>>, VertexData> {
     @Override
-    public VertexDataWritable map(Iterable<Pair<String, Integer>> v) {
-      List<Pair<String, Integer>> pairs = Lists.newArrayList(v);
-      int[] values = new int[pairs.size()];
-      Text[] targets = new Text[pairs.size()];
-      for (int i = 0; i < pairs.size(); i++) {
-        Pair<String, Integer> p = pairs.get(i);
-        targets[i] = new Text(p.first());
-        values[i] = p.second();
-      }
+    public VertexData map(Pair<String, Iterable<Pair<String, Integer>>> v) {
+      List<Pair<String, Integer>> pairs = Lists.newArrayList(v.second());
+      Map<String, Integer> targets = Maps.newHashMap();
       boolean bidder = true;
-      for (int i = 0; i < values.length; i++) {
-        if (values[i] < 0) {
-          if (i == 0) {
+      for (int i = 0; i < pairs.size(); i++) {
+        String id = pairs.get(i).first();
+        Integer score = pairs.get(i).second();
+        if (i == 0) {
+          if (score < 0) {
             bidder = false;
-          } else if (bidder) {
-            throw new IllegalStateException("Invalid input: vertex id occurs in both sides of the graph");
           }
-        } else if (!bidder) {
-          throw new IllegalStateException("Invalid input: vertex id occurs in both sides of the graph");
+          
+        } else if (bidder && score < 0) {
+          throw new IllegalStateException(
+              String.format("Invalid input: vertex id %s occurs in both sides of the graph", id));
+        } else if (!bidder && score >= 0) {
+          throw new IllegalStateException(
+              String.format("Invalid input: vertex id %s occurs in both sides of the graph", id));
         }
+        targets.put(id, score);
       }
-      return new VertexDataWritable(bidder, targets, values);
+      return new VertexData(v.first(), bidder, targets);
     }
   }
   
@@ -108,8 +111,8 @@ public class InputPreparer implements Tool {
     p.read(From.textFile(args[0]))
       .parallelDo(new TwoVerticesFn(args[2]), tableOf(strings(), pairs(strings(), ints())))
       .groupByKey()
-      .parallelDo(new WriteVertexFn(), tableOf(strings(), writables(VertexDataWritable.class)))
-      .write(To.sequenceFile(args[1]));
+      .parallelDo(new WriteVertexFn(), PTypes.jsonString(VertexData.class, WritableTypeFamily.getInstance()))
+      .write(To.textFile(args[1]));
     p.done();
     return 0;
   }
