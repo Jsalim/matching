@@ -14,6 +14,10 @@
  */
 package com.cloudera.science.matching.graph;
 
+import static org.junit.Assert.assertEquals;
+
+import java.util.Map;
+
 import org.apache.giraph.utils.InternalVertexRunner;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Test;
@@ -29,11 +33,18 @@ public class BipartiteMatchingTest {
 
   ObjectMapper mapper = new ObjectMapper();
   
-  private Iterable<String> run(String[] data) throws Exception {
-    return InternalVertexRunner.run(BipartiteMatchingVertex.class,
+  private Map<String, VertexData> run(String[] data) throws Exception {
+    Iterable<String> res = InternalVertexRunner.run(BipartiteMatchingVertex.class,
         BipartiteMatchingVertexInputFormat.class,
         BipartiteMatchingVertexOutputFormat.class,
         Maps.<String, String>newHashMap(), data);
+    
+    Map<String, VertexData> out = Maps.newHashMap();
+    for (String line : res) {
+      VertexData d = mapper.readValue(line, VertexData.class);
+      out.put(d.getVertexId(), d);
+    }
+    return out;
   }
   
   @Test
@@ -48,10 +59,11 @@ public class BipartiteMatchingTest {
         mapper.writeValueAsString(d3),
         mapper.writeValueAsString(d4),
     };
-    Iterable<String> res = run(data);
-    for (String line : res) {
-      System.out.println(line);
-    }
+    Map<String, VertexData> out = run(data);
+    assertEquals("3", out.get("1").getMatchId());
+    assertEquals("4", out.get("2").getMatchId());
+    assertEquals("1", out.get("3").getMatchId());
+    assertEquals("2", out.get("4").getMatchId());
   }
   
   @Test
@@ -66,10 +78,30 @@ public class BipartiteMatchingTest {
         mapper.writeValueAsString(d3),
         mapper.writeValueAsString(d4),
     };
-    Iterable<String> res = run(data);
-    for (String line : res) {
-      System.out.println(line);
-    }
+    Map<String, VertexData> out = run(data);
+    assertEquals("3", out.get("1").getMatchId());
+    assertEquals("4", out.get("2").getMatchId());
+    assertEquals("1", out.get("3").getMatchId());
+    assertEquals("2", out.get("4").getMatchId());
+  }
+  
+  @Test
+  public void testBothIndifferent() throws Exception {
+    VertexData d1 = new VertexData("1", true, ImmutableMap.of("3", 2, "4", 2)); 
+    VertexData d2 = new VertexData("2", true, ImmutableMap.of("3", 2, "4", 2));
+    VertexData d3 = new VertexData("3", false, ImmutableMap.of("1", -1, "2", -1));
+    VertexData d4 = new VertexData("4", false, ImmutableMap.of("1", -1, "2", -1));
+    
+    String[] data = new String[] { mapper.writeValueAsString(d1),
+        mapper.writeValueAsString(d2),
+        mapper.writeValueAsString(d3),
+        mapper.writeValueAsString(d4),
+    };
+    Map<String, VertexData> out = run(data);
+    assertEquals("3", out.get("1").getMatchId());
+    assertEquals("4", out.get("2").getMatchId());
+    assertEquals("1", out.get("3").getMatchId());
+    assertEquals("2", out.get("4").getMatchId());
   }
   
   @Test
@@ -84,10 +116,11 @@ public class BipartiteMatchingTest {
         mapper.writeValueAsString(d3),
         mapper.writeValueAsString(d4),
     };
-    Iterable<String> res = run(data);
-    for (String line : res) {
-      System.out.println(line);
-    }
+    Map<String, VertexData> out = run(data);
+    assertEquals("3", out.get("1").getMatchId());
+    assertEquals("4", out.get("2").getMatchId());
+    assertEquals("1", out.get("3").getMatchId());
+    assertEquals("2", out.get("4").getMatchId());
   }
   
   @Test
@@ -102,9 +135,10 @@ public class BipartiteMatchingTest {
         mapper.writeValueAsString(d3),
         mapper.writeValueAsString(d4),
     };
-    Iterable<String> res = run(data);
-    for (String line : res) {
-      System.out.println(line);
-    }
+    Map<String, VertexData> out = run(data);
+    assertEquals("4", out.get("1").getMatchId());
+    assertEquals("3", out.get("2").getMatchId());
+    assertEquals("2", out.get("3").getMatchId());
+    assertEquals("1", out.get("4").getMatchId());
   }
 }
