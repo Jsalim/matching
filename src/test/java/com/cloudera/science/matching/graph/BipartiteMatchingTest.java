@@ -141,4 +141,27 @@ public class BipartiteMatchingTest {
     assertEquals("2", out.get("3").getMatchId());
     assertEquals("1", out.get("4").getMatchId());
   }
+  
+  @Test
+  public void testUnassignedObject() throws Exception {
+    VertexData d1 = new VertexData("1", true, ImmutableMap.of("3", 2, "4", 3, "5", 1)); 
+    VertexData d2 = new VertexData("2", true, ImmutableMap.of("3", 3, "4", 2, "5", 1));
+    VertexData d3 = new VertexData("3", false, ImmutableMap.of("1", -1, "2", -1));
+    VertexData d4 = new VertexData("4", false, ImmutableMap.of("1", -1, "2", -1));
+    VertexData d5 = new VertexData("5", false, ImmutableMap.of("1", -1, "2", -1));
+    
+    String[] data = new String[] { mapper.writeValueAsString(d1),
+        mapper.writeValueAsString(d2),
+        mapper.writeValueAsString(d3),
+        mapper.writeValueAsString(d4),
+        mapper.writeValueAsString(d5),
+    };
+    Map<String, VertexData> out = run(data);
+    
+    assertEquals("4", out.get("1").getMatchId());
+    assertEquals("3", out.get("2").getMatchId());
+    assertEquals("2", out.get("3").getMatchId());
+    assertEquals("1", out.get("4").getMatchId());
+    assertEquals("", out.get("5").getMatchId());
+  }
 }

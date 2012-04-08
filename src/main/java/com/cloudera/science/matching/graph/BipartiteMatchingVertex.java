@@ -16,6 +16,7 @@ package com.cloudera.science.matching.graph;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -164,7 +165,8 @@ public class BipartiteMatchingVertex extends EdgeListVertex<Text, VertexState, I
   
   private BigDecimal getEpsilon() {
     BigDecimal two = new BigDecimal(2);
-    return two.divide(new BigDecimal(this.getNumVertices()).add(BigDecimal.ONE));
+    BigDecimal den = BigDecimal.ONE.add(new BigDecimal(getNumVertices()));
+    return two.divide(den, MathContext.DECIMAL64);
   }
   
   private AuctionMessage newSignal(int signal) {
