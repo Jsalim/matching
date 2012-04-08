@@ -17,6 +17,7 @@ package com.cloudera.science.matching.graph;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.math.BigDecimal;
 
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
@@ -29,12 +30,22 @@ import org.apache.hadoop.io.WritableComparable;
 public class AuctionMessage implements WritableComparable<AuctionMessage> {
 
   private Text vertexId;
-  private double value;
+  private int signal;
+  private BigDecimal value;
   
   public AuctionMessage() { }
   
-  public AuctionMessage(Text vertexId, double value) {
+  public AuctionMessage(Text vertexId, BigDecimal value) {
+    this(vertexId, 0, value);
+  }
+  
+  public AuctionMessage(Text vertexId, int signal) {
+    this(vertexId, signal, BigDecimal.ZERO);
+  }
+  
+  public AuctionMessage(Text vertexId, int signal, BigDecimal value) {
     this.vertexId = vertexId;
+    this.signal = signal;
     this.value = value;
   }
   
@@ -42,30 +53,36 @@ public class AuctionMessage implements WritableComparable<AuctionMessage> {
     return vertexId;
   }
   
-  public double getValue() {
+  public int getSignal() {
+    return signal;
+  }
+  
+  public BigDecimal getValue() {
     return value;
   }
   
   @Override
   public void readFields(DataInput in) throws IOException {
-    value = in.readDouble();
     if (vertexId == null) {
       vertexId = new Text();
     }
     vertexId.readFields(in);
+    signal = in.readInt();
+    value = new BigDecimal(in.readUTF());
   }
 
   @Override
   public void write(DataOutput out) throws IOException {
-    out.writeDouble(value);
     vertexId.write(out);
+    out.writeInt(signal);
+    out.writeUTF(value.toString());
   }
 
   @Override
   public int compareTo(AuctionMessage other) {
-    if (other.value == value) {
+    if (other.value.equals(value)) {
       return vertexId.hashCode() - other.vertexId.hashCode();
     }
-    return (int) (other.value - value);
+    return other.value.subtract(value).intValue();
   }
 }

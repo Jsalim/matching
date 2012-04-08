@@ -14,6 +14,7 @@
  */
 package com.cloudera.science.matching;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 import org.apache.hadoop.io.IntWritable;
@@ -27,7 +28,7 @@ public class VertexData {
   private Map<String, Integer> edges;
   
   private String matchId;
-  private double price;
+  private String price;
   
   public VertexData() {
   }
@@ -37,7 +38,7 @@ public class VertexData {
     this.bidder = bidder;
     this.edges = edges;
     this.matchId = "";
-    this.price = 0.0;
+    this.price = "0";
   }
 
   public VertexData(Text vertexId, VertexState vertexState, Map<Text, IntWritable> edges) {
@@ -48,7 +49,7 @@ public class VertexData {
       this.edges.put(e.getKey().toString(), e.getValue().get());
     }
     this.matchId = vertexState.getMatchId().toString();
-    this.price = vertexState.getPrice();
+    this.price = vertexState.getPrice().toString();
   }
 
   public String getVertexId() { return vertexId; }
@@ -63,15 +64,15 @@ public class VertexData {
   public String getMatchId() { return matchId; }
   public void setMatchId(String matchId) { this.matchId = matchId; }
   
-  public double getPrice() { return price; }
-  public void setPrice(double price) { this.price = price; }
+  public String getPrice() { return price; }
+  public void setPrice(String price) { this.price = price; }
   
   public Text extractVertexId() {
     return new Text(vertexId);
   }
   
   public VertexState extractVertexState() {
-    return new VertexState(bidder, new Text(matchId), price);
+    return new VertexState(bidder, new Text(matchId), new BigDecimal(price));
   }
   
   public Map<Text, IntWritable> extractEdges() {

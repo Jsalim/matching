@@ -15,6 +15,7 @@
 package com.cloudera.science.matching.graph;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -41,6 +42,30 @@ public class BipartiteMatchingVertex extends EdgeListVertex<Text, VertexState, I
     return out;
   }
   
+  private AuctionMessage getMax(List<AuctionMessage> values, Text currentMatchId) {
+    Collections.sort(values);
+    if (currentMatchId == null || currentMatchId.toString().isEmpty()) {
+      return values.get(0);
+    } else {
+      AuctionMessage max = values.get(0);
+      if (max.getVertexId().equals(currentMatchId)) {
+        return max;
+      } else {
+        AuctionMessage currentValue = null;
+        for (int i = 1; i < values.size(); i++) {
+          if (values.get(i).getVertexId().equals(currentMatchId)) {
+            currentValue = values.get(i);
+            break;
+          }
+        }
+        if (currentValue != null && currentValue.getValue() == max.getValue()) {
+          return currentValue;
+        }
+        return max;
+      }
+    }
+  }
+  
   @Override
   public void compute(Iterator<AuctionMessage> msgIterator) throws IOException {
     long superstep = getSuperstep();
@@ -56,23 +81,22 @@ public class BipartiteMatchingVertex extends EdgeListVertex<Text, VertexState, I
         }
         List<AuctionMessage> values = Lists.newArrayList();
         for (Text vertexId : this) {
-          double value = getEdgeValue(vertexId).get() - vpd.getPrice(vertexId);
+          BigDecimal value = new BigDecimal(getEdgeValue(vertexId).get()).subtract(vpd.getPrice(vertexId));
           values.add(new AuctionMessage(vertexId, value));
         }
-        Collections.sort(values);
-        AuctionMessage target = values.get(0);
         Text currentMatchId = state.getMatchId();
+        AuctionMessage target = getMax(values, currentMatchId);
         if (currentMatchId == null || !currentMatchId.equals(target.getVertexId())) {
-          double bid = Double.POSITIVE_INFINITY;
+          BigDecimal bid = null;
           if (values.size() > 1) {
-            double epsilon = 2.0 / (this.getNumVertices() + 1.0);
+            
             AuctionMessage runnerUp = values.get(1);
-            double inc = target.getValue() - runnerUp.getValue() + epsilon;
-            bid = vpd.getPrice(target.getVertexId()) + inc;
+            BigDecimal inc = target.getValue().subtract(runnerUp.getValue().add(getEpsilon()));
+            bid = vpd.getPrice(target.getVertexId()).add(inc);
           }
           sendMsg(target.getVertexId(), newMsg(bid));
           if (currentMatchId != null && !currentMatchId.toString().isEmpty()) {
-            sendMsg(currentMatchId, newMsg(Double.NEGATIVE_INFINITY));
+            sendMsg(currentMatchId, newSignal(-1));
           }
         } else {
           // Otherwise, I'm happy.
@@ -81,20 +105,21 @@ public class BipartiteMatchingVertex extends EdgeListVertex<Text, VertexState, I
       }
     } else {
       if (superstep % 2 == 1) {
-        double price = state.getPrice();
+        BigDecimal price = state.getPrice();
         List<AuctionMessage> bids = sortBids(msgIterator);
         if (!bids.isEmpty()) {
           Text currentMatchId = state.getMatchId();
           AuctionMessage winningBid = bids.get(0);
           Text newMatchId = winningBid.getVertexId();
-          if (currentMatchId == null || (!currentMatchId.equals(newMatchId) && winningBid.getValue() > price)) {
+          if (currentMatchId == null ||
+              (!currentMatchId.equals(newMatchId) && winningBid.getValue().compareTo(price) > 0)) {
             state.setMatchId(newMatchId);
             state.setPrice(winningBid.getValue());
             // Need to send the owners a heads up.
             if (currentMatchId != null && !currentMatchId.toString().isEmpty()) {
-              sendMsg(currentMatchId, newMsg(Double.NEGATIVE_INFINITY));
+              sendMsg(currentMatchId, newSignal(-1));
             }
-            sendMsg(newMatchId, newMsg(Double.POSITIVE_INFINITY));
+            sendMsg(newMatchId, newSignal(1));
           }
           // Announce my price to all the bidders.
           sendMsgToAllEdges(newMsg(state.getPrice()));
@@ -107,7 +132,7 @@ public class BipartiteMatchingVertex extends EdgeListVertex<Text, VertexState, I
   }
 
   static class VertexPriceData {
-    public Map<Text, Double> prices;
+    public Map<Text, BigDecimal> prices;
     public Text newMatchedId;
     public Text newLostId;
     
@@ -115,9 +140,9 @@ public class BipartiteMatchingVertex extends EdgeListVertex<Text, VertexState, I
       this.prices = Maps.newHashMap();
       while (iter.hasNext()) {
         AuctionMessage msg = iter.next();
-        if (msg.getValue() == Double.POSITIVE_INFINITY) {
+        if (msg.getSignal() > 0) {
           newMatchedId = msg.getVertexId();
-        } else if (msg.getValue() == Double.NEGATIVE_INFINITY) {
+        } else if (msg.getSignal() < 0) {
           newLostId = msg.getVertexId(); 
         } else {
           prices.put(msg.getVertexId(), msg.getValue());
@@ -125,12 +150,21 @@ public class BipartiteMatchingVertex extends EdgeListVertex<Text, VertexState, I
       }
     }
     
-    public Double getPrice(Text vertexId) {
-      return prices.containsKey(vertexId) ? prices.get(vertexId) : 0.0;
+    public BigDecimal getPrice(Text vertexId) {
+      return prices.containsKey(vertexId) ? prices.get(vertexId) : BigDecimal.ZERO;
     }
   }
   
-  private AuctionMessage newMsg(double value) {
+  private BigDecimal getEpsilon() {
+    BigDecimal two = new BigDecimal(2);
+    return two.divide(new BigDecimal(this.getNumVertices()).add(BigDecimal.ONE));
+  }
+  
+  private AuctionMessage newSignal(int signal) {
+    return new AuctionMessage(getVertexId(), signal);
+  }
+  
+  private AuctionMessage newMsg(BigDecimal value) {
     return new AuctionMessage(getVertexId(), value);
   }
   

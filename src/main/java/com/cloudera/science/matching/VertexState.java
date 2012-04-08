@@ -17,6 +17,7 @@ package com.cloudera.science.matching;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.math.BigDecimal;
 
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
@@ -28,7 +29,7 @@ public class VertexState implements Writable {
 
   private boolean bidder;
   private Text matchId = new Text();
-  private double price = 0.0;
+  private BigDecimal price = BigDecimal.ZERO;
   
   public VertexState() { }
   
@@ -36,7 +37,7 @@ public class VertexState implements Writable {
     this.bidder = bidder;
   }
   
-  public VertexState(boolean bidder, Text matchId, double price) {
+  public VertexState(boolean bidder, Text matchId, BigDecimal price) {
     this.bidder = bidder;
     this.matchId = matchId;
     this.price = price;
@@ -54,11 +55,11 @@ public class VertexState implements Writable {
     this.matchId = ownerId;
   }
   
-  public double getPrice() {
+  public BigDecimal getPrice() {
     return price;
   }
   
-  public void setPrice(double price) {
+  public void setPrice(BigDecimal price) {
     this.price = price;
   }
   
@@ -66,7 +67,7 @@ public class VertexState implements Writable {
   public void readFields(DataInput in) throws IOException {
     bidder = in.readBoolean();
     if (!bidder) {
-      price = in.readDouble();
+      price = new BigDecimal(in.readUTF());
     }
     matchId.readFields(in);
   }
@@ -75,7 +76,7 @@ public class VertexState implements Writable {
   public void write(DataOutput out) throws IOException {
     out.writeBoolean(bidder);
     if (!bidder) {
-      out.writeDouble(price);
+      out.writeUTF(price.toString());
     }
     matchId.write(out);
   }
