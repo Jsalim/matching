@@ -18,9 +18,14 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
+import org.apache.hadoop.io.WritableUtils;
+
+import com.google.common.collect.Maps;
 
 /**
  * Maintains the internal state of a vertex in the bipartite graph, with 
@@ -30,6 +35,7 @@ public class VertexState implements Writable {
   private boolean bidder;
   private Text matchId = new Text();
   private BigDecimal price = BigDecimal.ZERO;
+  private Map<Text, BigDecimal> priceIndex = Maps.newHashMap();
   
   public VertexState() { }
   
@@ -37,10 +43,11 @@ public class VertexState implements Writable {
     this.bidder = bidder;
   }
   
-  public VertexState(boolean bidder, Text matchId, BigDecimal price) {
+  public VertexState(boolean bidder, Text matchId, BigDecimal price, Map<Text, BigDecimal> priceIndex) {
     this.bidder = bidder;
     this.matchId = matchId;
     this.price = price;
+    this.priceIndex = priceIndex;
   }
   
   public boolean isBidder() {
@@ -63,6 +70,10 @@ public class VertexState implements Writable {
     this.price = price;
   }
   
+  public Map<Text, BigDecimal> getPriceIndex() {
+    return priceIndex;
+  }
+  
   @Override
   public void readFields(DataInput in) throws IOException {
     bidder = in.readBoolean();
@@ -70,6 +81,15 @@ public class VertexState implements Writable {
       price = new BigDecimal(in.readUTF());
     }
     matchId.readFields(in);
+    this.priceIndex = Maps.newHashMap();
+    int sz = WritableUtils.readVInt(in);
+    for (int i = 0; i < sz; i++) {
+      Text vertexId = new Text();
+      vertexId.readFields(in);
+      Text price = new Text();
+      price.readFields(in);
+      priceIndex.put(vertexId, new BigDecimal(price.toString()));
+    }
   }
 
   @Override
@@ -79,5 +99,10 @@ public class VertexState implements Writable {
       out.writeUTF(price.toString());
     }
     matchId.write(out);
+    WritableUtils.writeVInt(out, priceIndex.size());
+    for (Map.Entry<Text, BigDecimal> e : priceIndex.entrySet()) {
+      e.getKey().write(out);
+      new Text(e.getValue().toString()).write(out);
+    }
   }
 }

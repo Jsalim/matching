@@ -55,7 +55,7 @@ public class BipartiteMatchingTest {
   }
   
   @Test
-  public void testIndifference() throws Exception {
+  public void testIndifferentVertex() throws Exception {
     VertexData d1 = new VertexData("1", true, ImmutableMap.of("3", 2, "4", 2)); 
     VertexData d2 = new VertexData("2", true, ImmutableMap.of("3", 1, "4", 3));
     VertexData d3 = new VertexData("3", false, ImmutableMap.of("1", -1, "2", -1));
@@ -73,8 +73,26 @@ public class BipartiteMatchingTest {
   }
   
   @Test
-  public void testSamePrefs() throws Exception {
+  public void testSameDirectionalPrefs() throws Exception {
     VertexData d1 = new VertexData("1", true, ImmutableMap.of("3", 1, "4", 2)); 
+    VertexData d2 = new VertexData("2", true, ImmutableMap.of("3", 1, "4", 3));
+    VertexData d3 = new VertexData("3", false, ImmutableMap.of("1", -1, "2", -1));
+    VertexData d4 = new VertexData("4", false, ImmutableMap.of("1", -1, "2", -1));
+    
+    String[] data = new String[] { mapper.writeValueAsString(d1),
+        mapper.writeValueAsString(d2),
+        mapper.writeValueAsString(d3),
+        mapper.writeValueAsString(d4),
+    };
+    Iterable<String> res = run(data);
+    for (String line : res) {
+      System.out.println(line);
+    }
+  }
+  
+  @Test
+  public void testSameDirectionalIdenticalPrefs() throws Exception {
+    VertexData d1 = new VertexData("1", true, ImmutableMap.of("3", 1, "4", 3)); 
     VertexData d2 = new VertexData("2", true, ImmutableMap.of("3", 1, "4", 3));
     VertexData d3 = new VertexData("3", false, ImmutableMap.of("1", -1, "2", -1));
     VertexData d4 = new VertexData("4", false, ImmutableMap.of("1", -1, "2", -1));

@@ -58,8 +58,11 @@ public class BipartiteMatchingVertex extends EdgeListVertex<Text, VertexState, I
             break;
           }
         }
-        if (currentValue != null && currentValue.getValue().equals(max.getValue())) {
-          return currentValue;
+        if (currentValue != null) {
+          BigDecimal plusEps = currentValue.getValue().add(getEpsilon());
+          if (max.getValue().compareTo(plusEps) <= 0) {
+            return currentValue;
+          }
         }
         return max;
       }
@@ -73,8 +76,12 @@ public class BipartiteMatchingVertex extends EdgeListVertex<Text, VertexState, I
     if (state.isBidder()) {
       if (superstep % 2 == 0) {
         // Need to track who I own.
-        VertexPriceData vpd = new VertexPriceData(msgIterator);
+        VertexPriceData vpd = new VertexPriceData(msgIterator, state.getPriceIndex());
         if (vpd.newMatchedId != null) {
+          Text currentMatchId = state.getMatchId();
+          if (currentMatchId != null && !currentMatchId.toString().isEmpty()) {
+            sendMsg(currentMatchId, newSignal(-1));
+          }
           state.setMatchId(vpd.newMatchedId);
         } else if (vpd.newLostId != null) {
           state.setMatchId(null);
@@ -90,13 +97,10 @@ public class BipartiteMatchingVertex extends EdgeListVertex<Text, VertexState, I
           BigDecimal bid = null;
           if (values.size() > 1) {
             AuctionMessage runnerUp = values.get(1);
-            BigDecimal inc = target.getValue().subtract(runnerUp.getValue().add(getEpsilon()));
+            BigDecimal inc = target.getValue().subtract(runnerUp.getValue()).add(getEpsilon());
             bid = vpd.getPrice(target.getVertexId()).add(inc);
           }
           sendMsg(target.getVertexId(), newMsg(bid));
-          if (currentMatchId != null && !currentMatchId.toString().isEmpty()) {
-            sendMsg(currentMatchId, newSignal(-1));
-          }
         } else {
           // Otherwise, I'm happy.
           this.voteToHalt();
@@ -106,6 +110,10 @@ public class BipartiteMatchingVertex extends EdgeListVertex<Text, VertexState, I
       if (superstep % 2 == 1) {
         BigDecimal price = state.getPrice();
         List<AuctionMessage> bids = sortBids(msgIterator);
+        AuctionMessage rejectionSignal = popRejection(bids);
+        if (rejectionSignal != null) {
+          state.setMatchId(null);
+        }
         if (!bids.isEmpty()) {
           Text currentMatchId = state.getMatchId();
           AuctionMessage winningBid = bids.get(0);
@@ -135,8 +143,8 @@ public class BipartiteMatchingVertex extends EdgeListVertex<Text, VertexState, I
     public Text newMatchedId;
     public Text newLostId;
     
-    public VertexPriceData(Iterator<AuctionMessage> iter) {
-      this.prices = Maps.newHashMap();
+    public VertexPriceData(Iterator<AuctionMessage> iter, Map<Text, BigDecimal> priceIndex) {
+      this.prices = priceIndex;
       while (iter.hasNext()) {
         AuctionMessage msg = iter.next();
         if (msg.getSignal() > 0) {
@@ -165,6 +173,13 @@ public class BipartiteMatchingVertex extends EdgeListVertex<Text, VertexState, I
   
   private AuctionMessage newMsg(BigDecimal value) {
     return new AuctionMessage(getVertexId(), value);
+  }
+  
+  private AuctionMessage popRejection(List<AuctionMessage> bids) {
+    if (bids.get(bids.size() - 1).getSignal() < 0) {
+      return bids.remove(bids.size() - 1);
+    }
+    return null;
   }
   
   private List<AuctionMessage> sortBids(Iterator<AuctionMessage> msgIterator) {

@@ -26,6 +26,7 @@ public class VertexData {
   private String vertexId;
   private boolean bidder;
   private Map<String, Integer> edges;
+  private Map<String, String> priceIndex;
   
   private String matchId;
   private String price;
@@ -39,6 +40,7 @@ public class VertexData {
     this.edges = edges;
     this.matchId = "";
     this.price = "0";
+    this.priceIndex = Maps.newHashMap();
   }
 
   public VertexData(Text vertexId, VertexState vertexState, Map<Text, IntWritable> edges) {
@@ -47,6 +49,10 @@ public class VertexData {
     this.edges = Maps.newHashMap();
     for (Map.Entry<Text, IntWritable> e : edges.entrySet()) {
       this.edges.put(e.getKey().toString(), e.getValue().get());
+    }
+    this.priceIndex = Maps.newHashMap();
+    for (Map.Entry<Text, BigDecimal> e : vertexState.getPriceIndex().entrySet()) {
+      priceIndex.put(e.getKey().toString(), e.getValue().toString());
     }
     this.matchId = vertexState.getMatchId().toString();
     this.price = vertexState.getPrice().toString();
@@ -61,6 +67,9 @@ public class VertexData {
   public Map<String, Integer> getEdges() { return edges; }
   public void setEdges(Map<String, Integer> edges) { this.edges = edges; }
   
+  public Map<String, String> getPriceIndex() { return priceIndex; }
+  public void setPriceIndex(Map<String, String> priceIndex) { this.priceIndex = priceIndex; }
+  
   public String getMatchId() { return matchId; }
   public void setMatchId(String matchId) { this.matchId = matchId; }
   
@@ -72,7 +81,15 @@ public class VertexData {
   }
   
   public VertexState extractVertexState() {
-    return new VertexState(bidder, new Text(matchId), new BigDecimal(price));
+    return new VertexState(bidder, new Text(matchId), new BigDecimal(price), extractPriceIndex());
+  }
+  
+  private Map<Text, BigDecimal> extractPriceIndex() {
+    Map<Text, BigDecimal> out = Maps.newHashMap();
+    for (Map.Entry<String, String> e : priceIndex.entrySet()) {
+      out.put(new Text(e.getKey()), new BigDecimal(e.getValue()));
+    }
+    return out;
   }
   
   public Map<Text, IntWritable> extractEdges() {
