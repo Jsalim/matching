@@ -35,6 +35,8 @@ import com.google.common.collect.Maps;
  */
 public class BipartiteMatchingVertex extends EdgeListVertex<Text, VertexState, IntWritable, AuctionMessage> {
   
+  private static final BigDecimal REALLY_BIG_NUMBER = new BigDecimal(1000L * 1000L * 1000L * 1000L * 1000L);
+  
   public Map<Text, IntWritable> getEdges() {
     Map<Text, IntWritable> out = Maps.newHashMap();
     for (Text vertexId : this) {
@@ -95,7 +97,7 @@ public class BipartiteMatchingVertex extends EdgeListVertex<Text, VertexState, I
         Text currentMatchId = state.getMatchId();
         AuctionMessage target = getMax(values, currentMatchId);
         if (currentMatchId == null || !currentMatchId.equals(target.getVertexId())) {
-          BigDecimal bid = null;
+          BigDecimal bid = REALLY_BIG_NUMBER;
           if (values.size() > 1) {
             AuctionMessage runnerUp = values.get(1);
             BigDecimal inc = target.getValue().subtract(runnerUp.getValue()).add(getEpsilon());

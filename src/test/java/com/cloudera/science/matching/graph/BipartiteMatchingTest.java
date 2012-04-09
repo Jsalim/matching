@@ -161,4 +161,23 @@ public class BipartiteMatchingTest {
     assertEquals("1", out.get("4").getMatchId());
     assertEquals("", out.get("5").getMatchId());
   }
+  
+  @Test
+  public void testSingleBidder() throws Exception {
+    VertexData d1 = new VertexData("1", true, ImmutableMap.of("4", 3)); 
+    VertexData d2 = new VertexData("2", true, ImmutableMap.of("3", 1, "4", 3));
+    VertexData d3 = new VertexData("3", false, ImmutableMap.of("2", -1));
+    VertexData d4 = new VertexData("4", false, ImmutableMap.of("1", -1, "2", -1));
+    
+    String[] data = new String[] { mapper.writeValueAsString(d1),
+        mapper.writeValueAsString(d2),
+        mapper.writeValueAsString(d3),
+        mapper.writeValueAsString(d4),
+    };
+    Map<String, VertexData> out = run(data);
+    assertEquals("4", out.get("1").getMatchId());
+    assertEquals("3", out.get("2").getMatchId());
+    assertEquals("2", out.get("3").getMatchId());
+    assertEquals("1", out.get("4").getMatchId());
+  }
 }
