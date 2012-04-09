@@ -199,7 +199,8 @@ public class BipartiteMatchingTest {
     VertexData mickey = new VertexData("mickey", false, women);
     VertexData popeye = new VertexData("popeye", false, women);
     
-    String[] data = new String[] { mapper.writeValueAsString(beauty),
+    String[] data = new String[] {
+        mapper.writeValueAsString(beauty),
         mapper.writeValueAsString(daisy),
         mapper.writeValueAsString(minnie),
         mapper.writeValueAsString(olive),
