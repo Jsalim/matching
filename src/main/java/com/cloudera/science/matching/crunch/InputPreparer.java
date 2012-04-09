@@ -58,8 +58,10 @@ public class InputPreparer implements Tool {
       String id1 = pieces.get(0);
       String id2 = pieces.get(1);
       Integer score = Integer.valueOf(pieces.get(2));
-      emitter.emit(Pair.of(id1, Pair.of(id2, score)));
-      emitter.emit(Pair.of(id2, Pair.of(id1, -1)));
+      if (!id1.equals(id2) && score > 0) {
+        emitter.emit(Pair.of(id1, Pair.of(id2, score)));
+        emitter.emit(Pair.of(id2, Pair.of(id1, -1)));
+      }
     }
   }
   
