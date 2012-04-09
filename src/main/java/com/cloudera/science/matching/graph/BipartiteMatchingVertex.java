@@ -165,7 +165,7 @@ public class BipartiteMatchingVertex extends EdgeListVertex<Text, VertexState, I
   
   private BigDecimal getEpsilon() {
     BigDecimal two = new BigDecimal(2);
-    BigDecimal den = BigDecimal.ONE.add(new BigDecimal(getNumVertices()));
+    BigDecimal den = two.add(new BigDecimal(getNumVertices()));
     return two.divide(den, MathContext.DECIMAL64);
   }
   
