@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
@@ -42,7 +43,7 @@ import com.google.common.collect.Maps;
 /**
  *
  */
-public class InputPreparer implements Tool {
+public class InputPreparer extends Configured implements Tool {
 
   public static class TwoVerticesFn extends DoFn<String, Pair<String, Pair<String, Integer>>> {
     
@@ -91,18 +92,6 @@ public class InputPreparer implements Tool {
     }
   }
   
-  private Configuration conf;
-  
-  @Override
-  public Configuration getConf() {
-    return conf;
-  }
-
-  @Override
-  public void setConf(Configuration conf) {
-    this.conf = conf;
-  }
-
   public PCollection<VertexData> exec(PCollection<String> input, String sep) {
     return input
         .parallelDo(new TwoVerticesFn(sep), tableOf(strings(), pairs(strings(), ints())))
@@ -117,7 +106,7 @@ public class InputPreparer implements Tool {
       return 1;
     }
     
-    Pipeline p = new MRPipeline(InputPreparer.class, conf);
+    Pipeline p = new MRPipeline(InputPreparer.class, getConf());
     exec(p.read(From.textFile(args[0])), args[2]).write(To.textFile(args[1]));
     p.done();
     
