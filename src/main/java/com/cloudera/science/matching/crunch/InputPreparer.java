@@ -26,6 +26,7 @@ import org.apache.hadoop.util.ToolRunner;
 import com.cloudera.crunch.DoFn;
 import com.cloudera.crunch.Emitter;
 import com.cloudera.crunch.MapFn;
+import com.cloudera.crunch.PCollection;
 import com.cloudera.crunch.Pair;
 import com.cloudera.crunch.Pipeline;
 import com.cloudera.crunch.impl.mr.MRPipeline;
@@ -56,7 +57,7 @@ public class InputPreparer implements Tool {
       List<String> pieces = Lists.newArrayList(Splitter.on(sep).split(input));
       String id1 = pieces.get(0);
       String id2 = pieces.get(1);
-      Integer score = Integer.valueOf(pieces.get(1));
+      Integer score = Integer.valueOf(pieces.get(2));
       emitter.emit(Pair.of(id1, Pair.of(id2, score)));
       emitter.emit(Pair.of(id2, Pair.of(id1, -1)));
     }
@@ -75,7 +76,6 @@ public class InputPreparer implements Tool {
           if (score < 0) {
             bidder = false;
           }
-          
         } else if (bidder && score < 0) {
           throw new IllegalStateException(
               String.format("Invalid input: vertex id %s occurs in both sides of the graph", id));
@@ -101,19 +101,24 @@ public class InputPreparer implements Tool {
     this.conf = conf;
   }
 
+  public PCollection<VertexData> exec(PCollection<String> input, String sep) {
+    return input
+        .parallelDo(new TwoVerticesFn(sep), tableOf(strings(), pairs(strings(), ints())))
+        .groupByKey()
+        .parallelDo(new WriteVertexFn(), PTypes.jsonString(VertexData.class, WritableTypeFamily.getInstance()));
+  }
+  
   @Override
   public int run(String[] args) throws Exception {
     if (args.length < 3) {
       System.err.println("Usage: <input> <output> <sepchar>");
       return 1;
     }
+    
     Pipeline p = new MRPipeline(InputPreparer.class, conf);
-    p.read(From.textFile(args[0]))
-      .parallelDo(new TwoVerticesFn(args[2]), tableOf(strings(), pairs(strings(), ints())))
-      .groupByKey()
-      .parallelDo(new WriteVertexFn(), PTypes.jsonString(VertexData.class, WritableTypeFamily.getInstance()))
-      .write(To.textFile(args[1]));
+    exec(p.read(From.textFile(args[0])), args[2]).write(To.textFile(args[1]));
     p.done();
+    
     return 0;
   }
 

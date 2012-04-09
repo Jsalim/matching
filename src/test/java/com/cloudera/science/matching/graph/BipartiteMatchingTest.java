@@ -26,9 +26,6 @@ import com.cloudera.science.matching.VertexData;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 
-/**
- *
- */
 public class BipartiteMatchingTest {
 
   ObjectMapper mapper = new ObjectMapper();
