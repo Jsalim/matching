@@ -180,4 +180,40 @@ public class BipartiteMatchingTest {
     assertEquals("2", out.get("3").getMatchId());
     assertEquals("1", out.get("4").getMatchId());
   }
+  
+  @Test
+  public void testMarriageTheorem() throws Exception {
+    VertexData beauty = new VertexData("beauty", true,
+        ImmutableMap.of("beast", 9, "donald", 7, "mickey", 7, "popeye", 7));
+    VertexData daisy = new VertexData("daisy", true,
+        ImmutableMap.of("beast", 5, "donald", 8, "mickey", 7, "popeye", 5));
+    VertexData minnie = new VertexData("minnie", true,
+        ImmutableMap.of("beast", 6, "donald", 8, "mickey", 9, "popeye", 7));
+    VertexData olive = new VertexData("olive", true,
+        ImmutableMap.of("beast", 5, "donald", 2, "mickey", 4, "popeye", 7));
+    
+    ImmutableMap<String, Integer> women = ImmutableMap.of("beauty", -1, "daisy", -1,
+        "minnie", -1, "olive", -1);
+    VertexData beast = new VertexData("beast", false, women);
+    VertexData donald = new VertexData("donald", false, women);
+    VertexData mickey = new VertexData("mickey", false, women);
+    VertexData popeye = new VertexData("popeye", false, women);
+    
+    String[] data = new String[] { mapper.writeValueAsString(beauty),
+        mapper.writeValueAsString(daisy),
+        mapper.writeValueAsString(minnie),
+        mapper.writeValueAsString(olive),
+        mapper.writeValueAsString(beast),
+        mapper.writeValueAsString(donald),
+        mapper.writeValueAsString(mickey),
+        mapper.writeValueAsString(popeye),
+    };
+    
+    Map<String, VertexData> out = run(data);
+    assertEquals("beast", out.get("beauty").getMatchId());
+    assertEquals("minnie", out.get("mickey").getMatchId());
+    assertEquals("olive", out.get("popeye").getMatchId());
+    assertEquals("donald", out.get("daisy").getMatchId());
+  }
+  
 }
