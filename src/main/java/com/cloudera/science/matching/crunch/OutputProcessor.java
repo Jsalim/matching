@@ -44,7 +44,8 @@ public class OutputProcessor extends Configured implements Tool {
       public void process(VertexData input, Emitter<String> emitter) {
         if (input.isBidder()) {
           String matchId = input.getMatchId();
-          emitter.emit(String.format("%s,%s", input.getVertexId(), matchId));
+          Integer score = input.getEdges().get(matchId);
+          emitter.emit(String.format("%s,%s,%s", input.getVertexId(), matchId, score));
         }
       }
     }, Writables.strings());

@@ -41,7 +41,7 @@ public class OutputProcessorTest {
     PCollection<VertexData> data = MemPipeline.collectionOf(d1, d2, d3, d4);
     List<String> out = Lists.newArrayList(OutputProcessor.exec(data).materialize());
     assertEquals(2, out.size());
-    assertEquals("1,3", out.get(0));
-    assertEquals("2,4", out.get(1));
+    assertEquals("1,3,2", out.get(0));
+    assertEquals("2,4,2", out.get(1));
   }
 }
