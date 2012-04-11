@@ -1,2 +1,2 @@
 #!/bin/sh
-hadoop jar target/matching-0.1.0-jar-with-dependencies.jar com.cloudera.science.crunch.InputPreparer $@
+hadoop jar target/matching-0.1.0-jar-with-dependencies.jar com.cloudera.science.matching.crunch.InputPreparer $@

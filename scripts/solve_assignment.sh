@@ -1,2 +1,2 @@
 #!/bin/sh
-hadoop jar target/matching-0.1.0-jar-with-dependencies.jar com.cloudera.science.graph.BipartiteMatchingRunner $@
+hadoop jar target/matching-0.1.0-jar-with-dependencies.jar com.cloudera.science.matching.graph.BipartiteMatchingRunner $@
