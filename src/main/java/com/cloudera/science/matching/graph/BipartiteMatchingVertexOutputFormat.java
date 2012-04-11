@@ -16,15 +16,20 @@ package com.cloudera.science.matching.graph;
 
 import java.io.IOException;
 
+import org.apache.giraph.graph.BasicVertex;
 import org.apache.giraph.graph.VertexWriter;
 import org.apache.giraph.lib.TextVertexOutputFormat;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.RecordWriter;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.codehaus.jackson.map.ObjectMapper;
+
+import com.cloudera.science.matching.VertexData;
 
 
 /**
- *
+ * OutputFormat for BipartiteMatchingVertex.
  */
 public class BipartiteMatchingVertexOutputFormat extends
     TextVertexOutputFormat<Text, VertexState, IntWritable> {
@@ -32,5 +37,24 @@ public class BipartiteMatchingVertexOutputFormat extends
   public VertexWriter<Text, VertexState, IntWritable> createVertexWriter(
       TaskAttemptContext context) throws IOException, InterruptedException {
     return new BipartiteMatchingVertexWriter(textOutputFormat.getRecordWriter(context));
+  }
+  
+  public static class BipartiteMatchingVertexWriter extends TextVertexWriter<Text, VertexState, IntWritable> {
+    private static final Text BLANK = new Text("");
+    
+    private ObjectMapper mapper;
+    
+    public BipartiteMatchingVertexWriter(RecordWriter<Text, Text> lineRecordWriter) {
+      super(lineRecordWriter);
+      this.mapper = new ObjectMapper();
+    }
+    
+    @Override
+    public void writeVertex(BasicVertex<Text, VertexState, IntWritable, ?> vertex)
+        throws IOException, InterruptedException {
+      BipartiteMatchingVertex bmv = (BipartiteMatchingVertex) vertex;
+      VertexData vertexData = new VertexData(bmv.getVertexId(), bmv.getVertexValue(), bmv.getEdges());
+      getRecordWriter().write(BLANK, new Text(mapper.writeValueAsString(vertexData)));
+    }
   }
 }

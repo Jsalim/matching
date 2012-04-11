@@ -16,16 +16,22 @@ package com.cloudera.science.matching.graph;
 
 import java.io.IOException;
 
+import org.apache.giraph.graph.BasicVertex;
 import org.apache.giraph.graph.VertexReader;
 import org.apache.giraph.lib.TextVertexInputFormat;
 import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.codehaus.jackson.map.ObjectMapper;
+
+import com.cloudera.science.matching.VertexData;
 
 
 /**
- *
+ * Input format for the BipartiteMatchingVertex.
  */
 public class BipartiteMatchingVertexInputFormat extends
     TextVertexInputFormat<Text, VertexState, IntWritable, AuctionMessage> {
@@ -33,5 +39,28 @@ public class BipartiteMatchingVertexInputFormat extends
   public VertexReader<Text, VertexState, IntWritable, AuctionMessage> createVertexReader(
       InputSplit split, TaskAttemptContext context) throws IOException {
     return new BipartiteMatchingVertexReader(textInputFormat.createRecordReader(split, context));
+  }
+  
+  public static class BipartiteMatchingVertexReader extends TextVertexReader<Text, VertexState, IntWritable, AuctionMessage> {
+    private ObjectMapper mapper;
+    
+    public BipartiteMatchingVertexReader(RecordReader<LongWritable, Text> rr) {
+      super(rr);
+      this.mapper = new ObjectMapper();
+    }
+
+    @Override
+    public boolean nextVertex() throws IOException, InterruptedException {
+      return getRecordReader().nextKeyValue();
+    }
+
+    @Override
+    public BasicVertex<Text, VertexState, IntWritable, AuctionMessage> getCurrentVertex()
+        throws IOException, InterruptedException {
+      VertexData vertexData = mapper.readValue(getRecordReader().getCurrentValue().toString(), VertexData.class);
+      BipartiteMatchingVertex v = new BipartiteMatchingVertex();
+      v.initialize(vertexData.extractVertexId(), vertexData.extractVertexState(), vertexData.extractEdges(), null);
+      return v;
+    }
   }
 }

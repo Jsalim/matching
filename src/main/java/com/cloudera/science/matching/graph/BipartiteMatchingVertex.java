@@ -83,7 +83,7 @@ public class BipartiteMatchingVertex extends EdgeListVertex<Text, VertexState, I
         Text currentMatchId = state.getMatchId();
         AuctionMessage target = getMax(values, currentMatchId);
         if (currentMatchId == null || !currentMatchId.equals(target.getVertexId())) {
-          BigDecimal bid = ONE_HUNDRED_BILLION_DOLLARS; // Infinite bid, if it's the only match for me.
+          BigDecimal bid = ONE_HUNDRED_BILLION_DOLLARS; // Really big bid, if it's the only match for me.
           if (values.size() > 1) {
             // Otherwise, compute the bid relative to the value I get from the first runner-up.
             AuctionMessage runnerUp = values.get(1);
