@@ -26,7 +26,6 @@ import org.apache.giraph.graph.EdgeListVertex;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 
-import com.cloudera.science.matching.VertexState;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 

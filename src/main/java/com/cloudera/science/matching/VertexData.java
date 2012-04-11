@@ -20,8 +20,13 @@ import java.util.Map;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 
+import com.cloudera.science.matching.graph.VertexState;
 import com.google.common.collect.Maps;
 
+/**
+ * The serialized version of the data that we maintain about each vertex in our bipartite graph. The
+ * Crunch and Giraph jobs communicate by reading/writing JSON-ified versions of these objects.
+ */
 public class VertexData {
   private String vertexId;
   private boolean bidder;
@@ -34,6 +39,13 @@ public class VertexData {
   public VertexData() {
   }
   
+  /**
+   * The VertexData constructor used by Crunch's input preparation pipeline.
+   * 
+   * @param vertexId a unique identifier for this vertex
+   * @param bidder whether this vertex represents a bidder or an object
+   * @param edges The edges this vertex connects to, and for bidders, the weights.
+   */
   public VertexData(String vertexId, boolean bidder, Map<String, Integer> edges) {
     this.vertexId = vertexId;
     this.bidder = bidder;
@@ -76,10 +88,20 @@ public class VertexData {
   public String getPrice() { return price; }
   public void setPrice(String price) { this.price = price; }
   
+  /**
+   * Returns the Giraph-compatible version of the vertex identifier.
+   * 
+   * @return the Giraph-compatible version of the vertex identifier
+   */
   public Text extractVertexId() {
     return new Text(vertexId);
   }
   
+  /**
+   * Constructs a {@link VertexState} from the information contained in this object.
+   * 
+   * @return a {@link VertexState} from the information contained in this object
+   */
   public VertexState extractVertexState() {
     return new VertexState(bidder, new Text(matchId), new BigDecimal(price), extractPriceIndex());
   }
@@ -92,6 +114,11 @@ public class VertexData {
     return out;
   }
   
+  /**
+   * Returns the Giraph-compatible form of the edge data for this vertex.
+   * 
+   * @return the Giraph-compatible form of the edge data for this vertex
+   */
   public Map<Text, IntWritable> extractEdges() {
     Map<Text, IntWritable> out = Maps.newHashMap();
     for (Map.Entry<String, Integer> e : edges.entrySet()) {

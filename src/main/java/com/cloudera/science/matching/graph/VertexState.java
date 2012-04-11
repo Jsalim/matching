@@ -12,14 +12,13 @@
  * the specific language governing permissions and limitations under the
  * License.
  */
-package com.cloudera.science.matching;
+package com.cloudera.science.matching.graph;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
@@ -28,7 +27,8 @@ import org.apache.hadoop.io.WritableUtils;
 import com.google.common.collect.Maps;
 
 /**
- * Maintains the internal state of a vertex in the bipartite graph, with 
+ * Maintains the internal state of a vertex in the bipartite graph within a
+ * Giraph job. 
  */
 public class VertexState implements Writable {
 

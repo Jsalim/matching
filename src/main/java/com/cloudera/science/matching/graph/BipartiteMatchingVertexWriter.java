@@ -24,7 +24,6 @@ import org.apache.hadoop.mapreduce.RecordWriter;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import com.cloudera.science.matching.VertexData;
-import com.cloudera.science.matching.VertexState;
 
 /**
  *
