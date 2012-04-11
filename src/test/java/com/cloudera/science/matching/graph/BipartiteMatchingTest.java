@@ -102,6 +102,31 @@ public class BipartiteMatchingTest {
   }
   
   @Test
+  public void testSwaps() throws Exception {
+    VertexData d1 = new VertexData("1", true, ImmutableMap.of("4", 1, "5", 4, "6", 7)); 
+    VertexData d2 = new VertexData("2", true, ImmutableMap.of("4", 1, "5", 5, "6", 6));
+    VertexData d3 = new VertexData("3", true, ImmutableMap.of("4", 1, "5", 3, "6", 2));
+    VertexData d4 = new VertexData("4", false, ImmutableMap.of("1", -1, "2", -1, "3", -1));
+    VertexData d5 = new VertexData("5", false, ImmutableMap.of("1", -1, "2", -1, "3", -1));
+    VertexData d6 = new VertexData("6", false, ImmutableMap.of("1", -1, "2", -1, "3", -1));
+    
+    String[] data = new String[] { mapper.writeValueAsString(d1),
+        mapper.writeValueAsString(d2),
+        mapper.writeValueAsString(d3),
+        mapper.writeValueAsString(d4),
+        mapper.writeValueAsString(d5),
+        mapper.writeValueAsString(d6),
+    };
+    Map<String, VertexData> out = run(data);
+    assertEquals("6", out.get("1").getMatchId());
+    assertEquals("5", out.get("2").getMatchId());
+    assertEquals("4", out.get("3").getMatchId());
+    assertEquals("1", out.get("6").getMatchId());
+    assertEquals("2", out.get("5").getMatchId());
+    assertEquals("3", out.get("4").getMatchId());
+  }
+  
+  @Test
   public void testSameDirectionalPrefs() throws Exception {
     VertexData d1 = new VertexData("1", true, ImmutableMap.of("3", 1, "4", 2)); 
     VertexData d2 = new VertexData("2", true, ImmutableMap.of("3", 1, "4", 3));

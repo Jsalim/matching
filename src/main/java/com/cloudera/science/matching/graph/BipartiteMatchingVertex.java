@@ -30,12 +30,102 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 /**
- *
+ * Contains the logic for computing bids and prices at each node in the bipartite graph at each
+ * step in the computation. The implementation of the {@code compute} method follows Bertsekas' auction
+ * algorithm.
+ * 
+ * @see <a href="http://18.7.29.232/bitstream/handle/1721.1/3154/P-1908-20783037.pdf?sequence=1">Algorithm Tutorial</a>
  */
 public class BipartiteMatchingVertex extends EdgeListVertex<Text, VertexState, IntWritable, AuctionMessage> {
   
   private static final BigDecimal REALLY_BIG_NUMBER = new BigDecimal(1000L * 1000L * 1000L * 1000L * 1000L);
   
+  @Override
+  public void compute(Iterator<AuctionMessage> msgIterator) throws IOException {
+    long superstep = getSuperstep();
+    VertexState state = getVertexValue();
+    if (state.isBidder()) {
+      // Bidders only do work on even supersteps.
+      if (superstep % 2 == 0) {
+        // Load the data about which object I own, which I'm interested in,
+        // and their prices.
+        VertexPriceData vpd = new VertexPriceData(msgIterator, state.getPriceIndex());
+        
+        // Update my object ownership if it has changed.
+        if (vpd.newMatchedId != null) {
+          Text currentMatchId = state.getMatchId();
+          if (currentMatchId != null && !currentMatchId.toString().isEmpty()) {
+            sendMsg(currentMatchId, newSignal(-1));
+          }
+          state.setMatchId(vpd.newMatchedId);
+        } else if (vpd.newLostId != null) {
+          state.clearMatchId();
+        }
+        
+        // Compute the value I assign to each object, based on its current price.
+        List<AuctionMessage> values = Lists.newArrayList();
+        for (Text vertexId : this) {
+          BigDecimal value = new BigDecimal(getEdgeValue(vertexId).get()).subtract(vpd.getPrice(vertexId));
+          values.add(new AuctionMessage(vertexId, value));
+        }
+        
+        // Compare the value I get from the object I own now (if any) to the highest-value
+        // object that I am interested in.
+        Text currentMatchId = state.getMatchId();
+        AuctionMessage target = getMax(values, currentMatchId);
+        if (currentMatchId == null || !currentMatchId.equals(target.getVertexId())) {
+          BigDecimal bid = REALLY_BIG_NUMBER; // Infinite bid, if it's the only match for me.
+          if (values.size() > 1) {
+            // Otherwise, compute the bid relative to the value I get from the first runner-up.
+            AuctionMessage runnerUp = values.get(1);
+            BigDecimal inc = target.getValue().subtract(runnerUp.getValue()).add(getEpsilon());
+            bid = vpd.getPrice(target.getVertexId()).add(inc);
+          }
+          // Make an offer to my new favorite vertex.
+          sendMsg(target.getVertexId(), newMsg(bid));
+        } else {
+          // Otherwise, I'm happy.
+          this.voteToHalt();
+        }
+      }
+    } else {
+      // Objects only do work on odd supersteps.
+      if (superstep % 2 == 1) {
+        BigDecimal price = state.getPrice();
+        List<AuctionMessage> bids = sortBids(msgIterator);
+        
+        // Check to see if any of the inputs are actually a rejection signal
+        // from the current owner of this object.
+        AuctionMessage rejectionSignal = popRejection(bids);
+        if (rejectionSignal != null) {
+          state.clearMatchId();
+        }
+        
+        if (!bids.isEmpty()) {
+          Text currentMatchId = state.getMatchId();
+          AuctionMessage winningBid = bids.get(0);
+          Text newMatchId = winningBid.getVertexId();
+          // Verify that the high bidder beats the current best price.
+          if (currentMatchId == null ||
+              (!currentMatchId.equals(newMatchId) && winningBid.getValue().compareTo(price) > 0)) {
+            state.setMatchId(newMatchId);
+            state.setPrice(winningBid.getValue());
+            // Need to send the owners a heads up.
+            if (currentMatchId != null && !currentMatchId.toString().isEmpty()) {
+              sendMsg(currentMatchId, newSignal(-1));
+            }
+            sendMsg(newMatchId, newSignal(1));
+          }
+          // Announce my price to all the bidders.
+          sendMsgToAllEdges(newMsg(state.getPrice()));
+        }
+      } else {
+        // Objects always vote to halt on mod zero iterations.
+        this.voteToHalt();
+      }
+    }
+  }
+
   public Map<Text, IntWritable> getEdges() {
     Map<Text, IntWritable> out = Maps.newHashMap();
     for (Text vertexId : this) {
@@ -71,76 +161,7 @@ public class BipartiteMatchingVertex extends EdgeListVertex<Text, VertexState, I
     }
   }
   
-  @Override
-  public void compute(Iterator<AuctionMessage> msgIterator) throws IOException {
-    long superstep = getSuperstep();
-    VertexState state = getVertexValue();
-    if (state.isBidder()) {
-      if (superstep % 2 == 0) {
-        // Need to track who I own.
-        VertexPriceData vpd = new VertexPriceData(msgIterator, state.getPriceIndex());
-        if (vpd.newMatchedId != null) {
-          Text currentMatchId = state.getMatchId();
-          if (currentMatchId != null && !currentMatchId.toString().isEmpty()) {
-            sendMsg(currentMatchId, newSignal(-1));
-          }
-          state.setMatchId(vpd.newMatchedId);
-        } else if (vpd.newLostId != null) {
-          state.setMatchId(null);
-        }
-        List<AuctionMessage> values = Lists.newArrayList();
-        for (Text vertexId : this) {
-          BigDecimal value = new BigDecimal(getEdgeValue(vertexId).get()).subtract(vpd.getPrice(vertexId));
-          values.add(new AuctionMessage(vertexId, value));
-        }
-        Text currentMatchId = state.getMatchId();
-        AuctionMessage target = getMax(values, currentMatchId);
-        if (currentMatchId == null || !currentMatchId.equals(target.getVertexId())) {
-          BigDecimal bid = REALLY_BIG_NUMBER;
-          if (values.size() > 1) {
-            AuctionMessage runnerUp = values.get(1);
-            BigDecimal inc = target.getValue().subtract(runnerUp.getValue()).add(getEpsilon());
-            bid = vpd.getPrice(target.getVertexId()).add(inc);
-          }
-          sendMsg(target.getVertexId(), newMsg(bid));
-        } else {
-          // Otherwise, I'm happy.
-          this.voteToHalt();
-        }
-      }
-    } else {
-      if (superstep % 2 == 1) {
-        BigDecimal price = state.getPrice();
-        List<AuctionMessage> bids = sortBids(msgIterator);
-        AuctionMessage rejectionSignal = popRejection(bids);
-        if (rejectionSignal != null) {
-          state.setMatchId(null);
-        }
-        if (!bids.isEmpty()) {
-          Text currentMatchId = state.getMatchId();
-          AuctionMessage winningBid = bids.get(0);
-          Text newMatchId = winningBid.getVertexId();
-          if (currentMatchId == null ||
-              (!currentMatchId.equals(newMatchId) && winningBid.getValue().compareTo(price) > 0)) {
-            state.setMatchId(newMatchId);
-            state.setPrice(winningBid.getValue());
-            // Need to send the owners a heads up.
-            if (currentMatchId != null && !currentMatchId.toString().isEmpty()) {
-              sendMsg(currentMatchId, newSignal(-1));
-            }
-            sendMsg(newMatchId, newSignal(1));
-          }
-          // Announce my price to all the bidders.
-          sendMsgToAllEdges(newMsg(state.getPrice()));
-        }
-      } else {
-        // Objects always vote to halt on mod zero iterations.
-        this.voteToHalt();
-      }
-    }
-  }
-
-  static class VertexPriceData {
+  private static class VertexPriceData {
     public Map<Text, BigDecimal> prices;
     public Text newMatchedId;
     public Text newLostId;

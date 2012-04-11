@@ -23,7 +23,9 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
 /**
- *
+ * Main class that runs the Giraph implementation of the auction algorithm for
+ * solving assignment problems.
+ * 
  */
 public class BipartiteMatchingRunner extends Configured implements Tool {
 
@@ -31,6 +33,10 @@ public class BipartiteMatchingRunner extends Configured implements Tool {
   public int run(String[] args) throws Exception {
     if (args.length != 3) {
       System.err.println("Usage: <input> <output> <numworkers>");
+      System.err.println("The input should be the output of the InputPreparer Crunch pipeline.");
+      System.err.println("The output is the directory where the output of the matching will be");
+      System.err.println("written, and the numworkers should be <= the number of map slots available");
+      System.err.println("on your Hadoop cluster.");
       return 1;
     }
     

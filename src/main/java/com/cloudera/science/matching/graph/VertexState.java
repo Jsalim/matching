@@ -62,6 +62,10 @@ public class VertexState implements Writable {
     this.matchId = ownerId;
   }
   
+  public void clearMatchId() {
+    this.matchId = new Text();
+  }
+  
   public BigDecimal getPrice() {
     return price;
   }
@@ -86,9 +90,8 @@ public class VertexState implements Writable {
     for (int i = 0; i < sz; i++) {
       Text vertexId = new Text();
       vertexId.readFields(in);
-      Text price = new Text();
-      price.readFields(in);
-      priceIndex.put(vertexId, new BigDecimal(price.toString()));
+      String price = in.readUTF();
+      priceIndex.put(vertexId, new BigDecimal(price));
     }
   }
 
@@ -102,7 +105,7 @@ public class VertexState implements Writable {
     WritableUtils.writeVInt(out, priceIndex.size());
     for (Map.Entry<Text, BigDecimal> e : priceIndex.entrySet()) {
       e.getKey().write(out);
-      new Text(e.getValue().toString()).write(out);
+      out.writeUTF(e.getValue().toString());
     }
   }
 }

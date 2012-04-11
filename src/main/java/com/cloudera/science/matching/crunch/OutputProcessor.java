@@ -38,14 +38,21 @@ public class OutputProcessor extends Configured implements Tool {
 
   private static final PType<VertexData> vType = PTypes.jsonString(VertexData.class, WritableTypeFamily.getInstance());
   
+  /**
+   * Extracts the ID1,ID2,WEIGHT values from the JSON data written by the Giraph job.
+   * 
+   * @param giraphOutput A {@code PCollection} that represents the output of the Giraph job.
+   * @return the ID1,ID2,WEIGHT values for each line of output.
+   */
   public static PCollection<String> exec(PCollection<VertexData> giraphOutput) {
     return giraphOutput.parallelDo(new DoFn<VertexData, String>() {
       @Override
       public void process(VertexData input, Emitter<String> emitter) {
         if (input.isBidder()) {
+          String vertexId = input.getVertexId();
           String matchId = input.getMatchId();
           Integer score = input.getEdges().get(matchId);
-          emitter.emit(String.format("%s,%s,%s", input.getVertexId(), matchId, score));
+          emitter.emit(String.format("%s,%s,%s", vertexId, matchId, score));
         }
       }
     }, Writables.strings());
@@ -55,6 +62,10 @@ public class OutputProcessor extends Configured implements Tool {
   public int run(String[] args) throws Exception {
     if (args.length != 2) {
       System.err.println("Usage: <input> <output>");
+      System.err.println("The input should be the output of the BipartiteMatchingRunner, and the output");
+      System.err.println("of this job is a CSV file containing ID1,ID2,WEIGHT values for the matched");
+      System.err.println("pairs of bidder/object vertices in the bipartite graph.");
+      return 1;
     }
     Pipeline p = new MRPipeline(OutputProcessor.class, getConf());
     exec(p.read(From.textFile(args[0], vType))).write(To.textFile(args[1]));

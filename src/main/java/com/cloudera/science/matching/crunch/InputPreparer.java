@@ -19,7 +19,6 @@ import static com.cloudera.crunch.type.avro.Avros.*;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
@@ -45,8 +44,12 @@ import com.google.common.collect.Maps;
  */
 public class InputPreparer extends Configured implements Tool {
 
+  /**
+   * Map task that splits a single line of delimited text that consists of ID1,ID2,WEIGHT into the data
+   * that is fed into the reduce task that aggregates the information about each ID into a single
+   * record.
+   */
   public static class TwoVerticesFn extends DoFn<String, Pair<String, Pair<String, Integer>>> {
-    
     private final String sep;
     
     public TwoVerticesFn(String sep) {
@@ -66,6 +69,10 @@ public class InputPreparer extends Configured implements Tool {
     }
   }
   
+  /**
+   * Reduce task that aggregates the data about each bidder/object vertex and checks for error
+   * conditions, like an identifier that is both a bidder and an object.
+   */
   public static class WriteVertexFn extends MapFn<Pair<String, Iterable<Pair<String, Integer>>>, VertexData> {
     @Override
     public VertexData map(Pair<String, Iterable<Pair<String, Integer>>> v) {
@@ -102,14 +109,18 @@ public class InputPreparer extends Configured implements Tool {
   @Override
   public int run(String[] args) throws Exception {
     if (args.length < 3) {
-      System.err.println("Usage: <input> <output> <sepchar>");
+      System.err.println("Usage: <input> <output> <delim>");
+      System.err.println("The input should be a file with 3-columns: bidder ID, object ID, and weight,");
+      System.err.println("separated by the given delimiter.");
+      System.err.println("The output will be a text file of JSON-serialized information about each vertex");
+      System.err.println("that is the input to the BipartiteMatchingRunner.");
       return 1;
     }
     
     Pipeline p = new MRPipeline(InputPreparer.class, getConf());
-    exec(p.read(From.textFile(args[0])), args[2]).write(To.textFile(args[1]));
+    PCollection<VertexData> data = exec(p.read(From.textFile(args[0])), args[2]);
+    data.write(To.textFile(args[1]));
     p.done();
-    
     return 0;
   }
 
