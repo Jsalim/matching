@@ -38,7 +38,7 @@ import com.google.common.collect.Maps;
  */
 public class BipartiteMatchingVertex extends EdgeListVertex<Text, VertexState, IntWritable, AuctionMessage> {
   
-  private static final BigDecimal REALLY_BIG_NUMBER = new BigDecimal(1000L * 1000L * 1000L * 1000L * 1000L);
+  private static final BigDecimal ONE_HUNDRED_BILLION_DOLLARS = new BigDecimal(100L * 1000L * 1000L * 1000L);
   
   @Override
   public void compute(Iterator<AuctionMessage> msgIterator) throws IOException {
@@ -65,8 +65,17 @@ public class BipartiteMatchingVertex extends EdgeListVertex<Text, VertexState, I
         // Compute the value I assign to each object, based on its current price.
         List<AuctionMessage> values = Lists.newArrayList();
         for (Text vertexId : this) {
-          BigDecimal value = new BigDecimal(getEdgeValue(vertexId).get()).subtract(vpd.getPrice(vertexId));
-          values.add(new AuctionMessage(vertexId, value));
+          BigDecimal price = vpd.getPrice(vertexId);
+          if (price.compareTo(ONE_HUNDRED_BILLION_DOLLARS) < 0) {
+            BigDecimal value = new BigDecimal(getEdgeValue(vertexId).get()).subtract(price);
+            values.add(new AuctionMessage(vertexId, value));
+          }
+        }
+        
+        if (values.isEmpty()) {
+          // Nothing to bid on, problem is ill-posed. :(
+          voteToHalt();
+          return;
         }
         
         // Compare the value I get from the object I own now (if any) to the highest-value
@@ -74,7 +83,7 @@ public class BipartiteMatchingVertex extends EdgeListVertex<Text, VertexState, I
         Text currentMatchId = state.getMatchId();
         AuctionMessage target = getMax(values, currentMatchId);
         if (currentMatchId == null || !currentMatchId.equals(target.getVertexId())) {
-          BigDecimal bid = REALLY_BIG_NUMBER; // Infinite bid, if it's the only match for me.
+          BigDecimal bid = ONE_HUNDRED_BILLION_DOLLARS; // Infinite bid, if it's the only match for me.
           if (values.size() > 1) {
             // Otherwise, compute the bid relative to the value I get from the first runner-up.
             AuctionMessage runnerUp = values.get(1);

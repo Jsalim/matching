@@ -15,6 +15,7 @@
 package com.cloudera.science.matching.graph;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Map;
 
@@ -204,6 +205,20 @@ public class BipartiteMatchingTest {
     assertEquals("3", out.get("2").getMatchId());
     assertEquals("2", out.get("3").getMatchId());
     assertEquals("1", out.get("4").getMatchId());
+  }
+  
+  @Test
+  public void testDisaster() throws Exception {
+    VertexData d1 = new VertexData("1", true, ImmutableMap.of("3", 3)); 
+    VertexData d2 = new VertexData("2", true, ImmutableMap.of("3", 1));
+    VertexData d3 = new VertexData("3", false, ImmutableMap.of("1", -1, "2", -1));
+    
+    String[] data = new String[] { mapper.writeValueAsString(d1),
+        mapper.writeValueAsString(d2),
+        mapper.writeValueAsString(d3),
+    };
+    Map<String, VertexData> out = run(data);
+    assertTrue(out.get("1").getMatchId().equals("") || out.get("2").getMatchId().equals(""));
   }
   
   @Test
